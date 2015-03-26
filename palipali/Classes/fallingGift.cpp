@@ -1,0 +1,199 @@
+#include "fallingGift.h"
+USING_NS_CC;
+
+
+CCScene* fallingGift::scene()
+{
+    CCScene *scene = CCScene::create();
+    fallingGift *layer = fallingGift::create();
+    scene->addChild(layer);
+    return scene;
+}
+
+bool fallingGift::init()
+{
+    if ( !CCLayer::init() )
+    {
+        return false;
+    }    
+
+    _mapFPtr["addGift"] = &fallingGift::addGift;
+
+    _visibleSize = CCDirector::sharedDirector()->getVisibleSize();
+    _origin = CCDirector::sharedDirector()->getVisibleOrigin();
+    _screenSize = CCDirector::sharedDirector()->getWinSize();
+    setTouchEnabled(true);
+    CCSprite*	background = CCSprite::create("fallinggift_bg.jpg");
+    background->setAnchorPoint(ccp(0,0));
+    this->addChild(background);
+
+    CCSpriteFrameCache::sharedSpriteFrameCache()->addSpriteFramesWithFile("santa.plist");
+    _gameBatchNode = CCSpriteBatchNode::create("santa.png");
+    this->addChild(_gameBatchNode);
+
+    _player = CCSprite::createWithSpriteFrame(CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName("santa1.png"));
+    _playerLine = 100;
+    _player->setPosition(ccp(_screenSize.width / 2, _playerLine));
+    this->addChild(_player);
+
+    CCAnimation* animation;
+    CCSpriteFrame * frame;
+    //create CCAnimation object
+    animation = CCAnimation::create();
+    CCString * name;
+    for(int i = 1; i <= 16; i++) {
+      name = CCString::createWithFormat("santa%i.png", i);
+      frame = CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(name->getCString());
+      animation->addSpriteFrame(frame);
+    }
+
+    animation->setDelayPerUnit(1 / 10.0f);
+    animation->setRestoreOriginalFrame(true);
+    _player->runAction(CCRepeatForever::create(CCAnimate::create(animation)));
+    //INIT SOME VALUES FOR THE GAME
+    _currentFrame = 0;
+    _playerMove = 0;
+    _touched = false;
+    _currentScore = 0;
+    _winCondition = 0;
+
+    //INIT SOME FUNCTIONS
+    loadLevel();
+
+    //SCHEDULE
+    this->schedule(schedule_selector(fallingGift::update));
+    return true;
+}
+
+fallingGift::~fallingGift() {
+
+}
+
+void	fallingGift::animationDone() {
+  std::cout << "DONE" << std::endl;
+}
+
+void fallingGift::loadLevel() {
+
+  CCObject* jt = NULL;
+  std::string levelsFile = CCFileUtils::sharedFileUtils()->fullPathFromRelativePath("fallingGift.plist");
+  _levels = CCArray::createWithContentsOfFileThreadSafe(levelsFile
+							.c_str());
+  _levels->retain();
+  _levelData = (CCDictionary *) _levels->objectAtIndex(0); //TODO
+  CCArray * spawns = (CCArray *) _levelData->objectForKey("levels");
+  CCARRAY_FOREACH(spawns, jt)
+    {
+      CCDictionary * data = (CCDictionary *) jt;
+      std::map<std::string, const CCString*> enemyProperty;
+      enemyProperty.insert(std::pair<std::string, const CCString*>("function", data->valueForKey("function")));
+      _mapEvents.insert(std::pair<float, std::map<std::string, const CCString*> >(data->valueForKey("time")->floatValue(), enemyProperty));
+    }
+}
+
+void	fallingGift::update(float dt) {
+  //COLLISION
+  collideWith(_items);
+  if (_touched) {
+    if (_playerMove < 0)
+      _player->setFlipX(true);
+    else
+      _player->setFlipX(false);
+    _player->setPosition(ccp(_player->getPositionX() + _playerMove, _playerLine));
+  }
+  //Main loop for spawning events according to the game timeline in Resources/levels.plist
+  for (std::map<float, std::map<std::string, const CCString*> >::iterator it = _mapEvents.begin(); it != _mapEvents.end(); ++it)
+    {
+      if (it->first == _currentFrame) {
+	std::map<std::string, fPtr>::iterator result = _mapFPtr.find(it->second["function"]->getCString());
+	if (result != _mapFPtr.end())
+	  (this->*(result->second))(it->second);
+      }
+    }
+  //Keep in mind at which frame of the game we are
+  _currentFrame++;
+}
+
+void			fallingGift::collideWith(std::vector<CCSprite*> objects) {
+  
+  CCRect		unitRect = CCRectMake( _player->getPosition().x - (_player->getContentSize().width/2)
+					       , _player->getPosition().y - (_player->getContentSize().height/2)
+					       , _player->getContentSize().width
+					       , _player->getContentSize().height);
+  for (int i = 0; i < objects.size(); i++)
+    {
+      CCRect		objectRect = CCRectMake( objects[i]->getPosition().x - (objects[i]->getContentSize().width/2)
+						 , objects[i]->getPosition().y - (objects[i]->getContentSize().height/2)
+						 , objects[i]->getContentSize().width
+						 , objects[i]->getContentSize().height);
+      if (unitRect.intersectsRect(objectRect))
+	{
+	  _items[i]->stopAllActions();
+	  this->removeChild(_items[i], true);
+	  _items.erase(_items.begin() + i);
+	  _currentScore++;
+	}
+    }
+}
+
+int		fallingGift::myRand(const int min_limit, const int max_limit)
+{ 
+  return rand() % (max_limit - min_limit + 1) + min_limit;
+}
+
+void fallingGift::addGift(std::map<std::string, const CCString*> infos) {
+  std::cout << "Adding gift" << std::endl;
+  CCSprite*	target = CCSprite::create("blue_gift.png");
+  target->setPosition(ccp(myRand(100.0f, _screenSize.width - 100), _screenSize.height));
+  CCAction	*topBot = CCMoveTo::create(8.0f, ccp(target->getPositionX(), -200));
+  target->runAction(topBot);
+  _items.push_back(target);
+  this->addChild(target);
+  _winCondition++;
+}
+ 
+void fallingGift::ccTouchesBegan(CCSet* touches, CCEvent* event)
+{
+  _touched = true;
+  CCTouch *touch = (CCTouch*)touches->anyObject();
+  CCPoint location = convertTouchToNodeSpace(touch);
+  if (location.x > _player->getPositionX())
+    _playerMove = 3;
+  else if (location.x < _player->getPositionX())
+    _playerMove = -3;
+  
+}
+
+void fallingGift::ccTouchesMoved(CCSet* touches, CCEvent* event)
+{
+  CCTouch *touch = (CCTouch*)touches->anyObject();
+  CCPoint location = convertTouchToNodeSpace(touch);
+  _touched = true;
+if (location.x > _player->getPositionX())
+    _playerMove = 3;
+  else if (location.x < _player->getPositionX())
+    _playerMove = -3;
+}
+
+void  fallingGift::ccTouchesEnded(CCSet* touches, CCEvent* event)
+{
+  _touched = false;
+}
+
+std::string	fallingGift::intToString(int value) {
+  std::string	s;
+  std::stringstream out;
+  out << value;
+  s = out.str();
+  return s;
+}
+
+void fallingGift::menuCloseCallback(CCObject* pSender)
+{
+    CCDirector::sharedDirector()->end();
+    
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
+    exit(0);
+#endif
+}
+

@@ -1,0 +1,107 @@
+#include "Palipali.h"
+USING_NS_CC;
+
+
+CCScene* Palipali::scene()
+{
+    CCScene *scene = CCScene::create();
+    Palipali *layer = Palipali::create();
+    //BackgroundLayer *bg = BackgroundLayer::create();
+    //scene->addChild(bg);
+    scene->addChild(layer);
+    return scene;
+}
+
+bool Palipali::init()
+{
+    if ( !CCLayer::init() )
+    {
+        return false;
+    }    
+
+    //_mapFPtr["line"] = &Palipali::spawnLine;
+
+    _visibleSize = CCDirector::sharedDirector()->getVisibleSize();
+    _origin = CCDirector::sharedDirector()->getVisibleOrigin();
+    _screenSize = CCDirector::sharedDirector()->getWinSize();
+    setTouchEnabled(true);
+    _levelLabel = CCLabelTTF::create("Level : 0", "Helvetica", 12,
+				     CCSizeMake(245, 32), kCCTextAlignmentCenter);
+    CCMenuItemImage *pShoot = CCMenuItemImage::create(
+                                                          "CloseNormal.png",
+                                                          "CloseSelected.png",
+                                                          this,
+                                                          menu_selector(Palipali::menuCloseCallback));
+    
+    pShoot->setPosition(ccp(_origin.x + _visibleSize.width - pShoot->getContentSize().width/2 , _origin.y + pShoot->getContentSize().height/2));
+    CCMenu* pMenu = CCMenu::create(pShoot, NULL);
+    pMenu->setPosition(CCPointZero);
+    this->addChild(pMenu, 1);
+    this->addChild(_levelLabel);
+
+    //INIT SOME VALUES FOR THE GAME
+    _currentFrame = 0;
+    _gameLevel = 1;
+    _speedValue = 0.2;
+    _gameSpeed = 1 + _gameLevel * _speedValue;
+
+    //INIT SOME FUNCTIONS
+
+    //SCHEDULE
+    this->schedule(schedule_selector(Palipali::update));
+    return true;
+}
+
+Palipali::~Palipali() {
+
+}
+
+void	Palipali::update(float dt) {
+
+  
+  //Keep in mind at which frame of the game we are
+  _currentFrame++;
+  std::cout << "Frame : " << _currentFrame << std::endl;
+}
+ 
+void Palipali::ccTouchesBegan(CCSet* touches, CCEvent* event)
+{
+  CCTouch *touch = (CCTouch*)touches->anyObject();
+  _lastTouchLocation = convertTouchToNodeSpace(touch);
+}
+
+void Palipali::ccTouchesMoved(CCSet* touches, CCEvent* event)
+{
+  CCTouch *touch = (CCTouch*)touches->anyObject();
+  CCPoint location = convertTouchToNodeSpace(touch);
+  //location.x = _playerColumn;
+  //_lastTouchLocation.x = _playerColumn; 
+  //  for (int i = 0; i < _playersPool.size(); i++) 
+  // {
+  //  CCSprite*	sprite = _playersPool[i]->getSprite();
+  //  sprite->setPosition(ccpAdd(sprite->getPosition(), ccpSub(location, _lastTouchLocation ) ) );
+  //  _lastTouchLocation = location;
+  //}
+}
+
+void  Palipali::ccTouchesEnded(CCSet* touches, CCEvent* event)
+{
+}
+
+std::string	Palipali::intToString(int value) {
+  std::string	s;
+  std::stringstream out;
+  out << value;
+  s = out.str();
+  return s;
+}
+
+void Palipali::menuCloseCallback(CCObject* pSender)
+{
+    CCDirector::sharedDirector()->end();
+    
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
+    exit(0);
+#endif
+}
+

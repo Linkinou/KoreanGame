@@ -1,0 +1,52 @@
+#include "Gameover.h"
+#include "BackgroundLayer.h"
+USING_NS_CC;
+
+
+CCScene* Gameover::scene()
+{
+    CCScene *scene = CCScene::create();
+    Gameover *layer = Gameover::create();
+    scene->addChild(layer);
+    return scene;
+}
+
+bool Gameover::init()
+{
+    if ( !CCLayer::init() )
+    {
+        return false;
+    }
+    CCSize visibleSize = CCDirector::sharedDirector()->getVisibleSize();
+    CCPoint origin = CCDirector::sharedDirector()->getVisibleOrigin();    
+    //CCActionInterval* lens = CCLens3D::create(ccp(240,160),240,ccg(15,10),8);
+    //CCActionInterval* waves = CCWaves3D::create(13,50,ccg(10,5),5);
+    
+    _background = CCSprite::create("gameover_bg.jpg");
+    _background->setAnchorPoint(ccp(0,0));
+    //_screenTitle->runAction(CCRepeatForever::create(waves));
+    setTouchEnabled(true);
+    this->addChild(_background, 0);
+
+    return true;
+}
+
+Gameover::~Gameover() {
+
+}
+
+void Gameover::ccTouchesBegan(CCSet* touches, CCEvent* event)
+{
+  CCScene	*menuScene = Menu::scene();
+  CCDirector::sharedDirector()->replaceScene(menuScene);  
+}
+
+void Gameover::ccTouchesMoved(CCSet* touches, CCEvent* event)
+{
+
+}
+
+void  Gameover::ccTouchesEnded(CCSet* touches, CCEvent* event)
+{
+
+}

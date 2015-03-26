@@ -1,0 +1,65 @@
+#include "Menu.h"
+#include "BackgroundLayer.h"
+
+USING_NS_CC;
+
+
+CCScene* Menu::scene()
+{
+    CCScene *scene = CCScene::create();
+    Menu *layer = Menu::create();
+    scene->addChild(layer);
+    return scene;
+}
+
+bool Menu::init()
+{
+    if ( !CCLayer::init() )
+    {
+        return false;
+    }
+    CCSize visibleSize = CCDirector::sharedDirector()->getVisibleSize();
+    CCPoint origin = CCDirector::sharedDirector()->getVisibleOrigin();
+    _screenSize = CCDirector::sharedDirector()->getWinSize();
+    CCSprite*	pali1 = CCSprite::create("titlescreen_pali.png");
+    CCSprite*	pali2 = CCSprite::create("titlescreen_pali2.png");
+    CCSprite*	runrun = CCSprite::create("titlescreen_runrun.png");
+    
+    _screenTitle = CCSprite::create("titlescreen_bg.png");
+    _screenTitle->setAnchorPoint(ccp(0,0));
+    setTouchEnabled(true);
+    pali1->setPosition(ccp(_screenSize.width / 4, _screenSize.height - 200));
+    pali2->setPosition(ccp(_screenSize.width - _screenSize.width / 4, _screenSize.height - 200));
+    runrun->setPosition(ccp(_screenSize.width / 2, 300));
+    this->addChild(_screenTitle, 0);
+    this->addChild(pali1, 1);
+    this->addChild(pali2, 1);
+    this->addChild(runrun, 1);
+
+    return true;
+}
+
+Menu::~Menu() {
+
+}
+
+void Menu::ccTouchesBegan(CCSet* touches, CCEvent* event)
+{
+  CCScene		*_gameScene = CCScene::create();
+  Palipali		*palipali = Palipali::create();
+  BackgroundLayer*	bg = BackgroundLayer::create();
+  palipali->setGameLevel(2);
+  _gameScene->addChild(palipali, 1, 4242);
+  _gameScene->addChild(bg);
+  CCDirector::sharedDirector()->replaceScene((CCScene*)CCTransitionSplitRows::create(0.5,_gameScene));
+}
+
+void Menu::ccTouchesMoved(CCSet* touches, CCEvent* event)
+{
+
+}
+
+void  Menu::ccTouchesEnded(CCSet* touches, CCEvent* event)
+{
+
+}
